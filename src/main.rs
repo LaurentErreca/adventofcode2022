@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::time::Instant;
 
-use avent202::*;
+use avent2022::*;
 
 #[derive(Parser)]
 #[clap(version = "1.0")]
