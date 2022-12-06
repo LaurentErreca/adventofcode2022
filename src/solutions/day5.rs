@@ -30,9 +30,19 @@ pub fn solve(part: u8, input: &String) -> String {
                                                              split.next().unwrap().parse::<usize>().unwrap(),
                                                              split.next().unwrap(),
                                                              split.next().unwrap().parse::<usize>().unwrap());
+        let mut values_to_push: Vec<char> = vec![];
         for _ in 1..=nb_to_move {
-            let value_to_push = stacks[start_stack-1].pop().unwrap();
-            stacks[end_stack-1].push(value_to_push);
+            if nb_to_move == 1 || part == 1 {
+                let value_to_push = stacks[start_stack-1].pop().unwrap();
+                stacks[end_stack-1].push(value_to_push);
+            }
+            else if part == 2 {
+                values_to_push.push(stacks[start_stack-1].pop().unwrap());
+            }
+        }
+        if part == 2 {
+            let ch: Vec<char> = values_to_push.into_iter().rev().collect();
+            stacks[end_stack-1].extend(ch);
         }
     }
     let mut result: Vec<char> = vec![];
