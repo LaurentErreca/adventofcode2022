@@ -9,16 +9,12 @@ pub fn solve(part: u8, input: &String) -> String {
         2 => length_message_identifier = 14,
         _ => println!("Incorrect value for part"),
     }
-    for _ in data.clone() {
+    let mut buffer: Vec<char> = vec![];
+    for c in data.clone() {
+        buffer.push(c);
         nb_chars += 1;
         if nb_chars >= length_message_identifier {
-            let hs: usize = HashSet::<char>::from_iter(data.clone()
-                                                       .into_iter()
-                                                       .enumerate()
-                                                       .filter(|(idx, _)| idx >= &(nb_chars-length_message_identifier) && idx < &nb_chars )
-                                                       .map(|(_, val)| val)
-                                                       .collect::<Vec<char>>()
-                                                    ).len();
+            let hs: usize = HashSet::<char>::from_iter(buffer[buffer.len()-length_message_identifier..].to_vec()).len();
             if hs == length_message_identifier {
                 return nb_chars.to_string();
             }
