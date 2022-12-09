@@ -3,10 +3,11 @@
 #[derive(Clone)]
 struct Node<T>
 where
-    T: PartialEq,
+    T: PartialEq + std::fmt::Debug,
 {
     idx: usize,
     val: T,
+    isdir: bool,
     parent: Option<usize>,
     children: Vec<usize>,
     size: Option<u32>
@@ -14,13 +15,14 @@ where
 
 impl<T> Node<T>
 where
-    T: PartialEq,
+    T: PartialEq + std::fmt::Debug,
 {
-    fn new(idx: usize, val: T, size: Option<u32>) -> Self {
+    fn new(idx: usize, val: T, isdir: bool, size: Option<u32>, parent: Option<usize>) -> Self {
         Self {
             idx,
             val,
-            parent: None,
+            isdir,
+            parent,//: None,
             children: vec![],
             size
         }
@@ -30,41 +32,53 @@ where
 #[derive(Debug, Default)]
 struct ArenaTree<T>
 where
-    T: PartialEq,
+    T: PartialEq + std::fmt::Debug,
 {
     arena: Vec<Node<T>>,
 }
 
 impl<T> ArenaTree<T>
 where
-    T: PartialEq,
+    T: PartialEq + std::fmt::Debug,
 {
-    fn node(&mut self, val: T, size: Option<u32>) -> usize {
+    fn node(&mut self, val: T, isdir: bool, size: Option<u32>, parent: Option<usize>) -> usize {
         //first see if it exists
         for node in &self.arena {
-            if node.val == val {
+            if node.val == val && node.parent == parent {
                 return node.idx;
             }
         }
         // Otherwise, add new node
         let idx = self.arena.len();
-        self.arena.push(Node::new(idx, val, size));
+        self.arena.push(Node::new(idx, val, isdir, size, parent));
         idx
     }
 
-    fn get_folder_size(&self, node: usize) -> u32 {
-        let mut total_size: u32 = 0;
-        for child in &self.arena[node].children {
-            //println!("node : {} - child idx : {}", node, child);
-            match self.arena[*child].size {
-                Some(0) => total_size += self.get_folder_size(*child),
-                Some(size) => total_size += size,
-                None => println!("None")
+    fn set_folders_size(&mut self) {
+        loop {
+            let mut has_empty_folders: bool = false;
+            for idx in 0..self.arena.len() {
+                if self.arena[idx].isdir && self.arena[idx].size == Some(0) {
+                    let mut has_empty_folder_child: bool = false;
+                    let mut folder_size: u32 = 0;
+                    for child in &self.arena[idx].children {
+                        if self.arena[*child].isdir && self.arena[*child].size == Some(0) {
+                            has_empty_folder_child = true;
+                            has_empty_folders = true;
+                            break;
+                        }
+                        else {
+                            folder_size += self.arena[*child].size.unwrap();
+                        }
+                    }
+                    if !has_empty_folder_child {
+                        self.arena[idx].size = Some(folder_size);
+                    }
+                }
             }
+            if !has_empty_folders { break; }
         }
-        return total_size.try_into().unwrap();
     }
-
 }
 
 pub fn solve(part: u8, input: &String) -> String {
@@ -73,17 +87,19 @@ pub fn solve(part: u8, input: &String) -> String {
     let mut current_index: usize = 0;
 
     for li in vecstr {
-        //println!("Line : {}", li);
         if li == "$ cd /" {
-            current_index = tree.node("/".into(), None);
+            current_index = tree.node("/".into(), true, Some(0), Some(0));
             tree.arena[current_index].size = Some(0);
-            //println!("cd / => Current index : {}", current_index);
         }
         else if li.starts_with("$ cd ") && li != "$ cd .." {
             let mut spl_folder = li.split(" ");
             let (_, _, folder_name) = (spl_folder.next().unwrap(), spl_folder.next().unwrap(), spl_folder.next().unwrap());
-            current_index = tree.node(folder_name.into(), None);
-            //println!("Current index : {}", current_index);
+            for idx in &tree.arena[current_index].children {
+                if tree.arena[*idx].val == folder_name {
+                    current_index = *idx;
+                    break;
+                }
+            }
         }
         else if li == "$ cd .." {
             current_index = tree.arena[current_index].parent.unwrap();
@@ -91,53 +107,28 @@ pub fn solve(part: u8, input: &String) -> String {
         else if li.starts_with("dir") {
             let mut spl_folder = li.split(" ");
             let (_, folder_name) = (spl_folder.next().unwrap(), spl_folder.next().unwrap());
-            //println!("Folder name : {:?}", folder_name);
-            let idx_dir = tree.node(folder_name.into(), None);
+            let idx_dir = tree.node(folder_name.into(), true, Some(0), Some(current_index));
             tree.arena[current_index].children.push(idx_dir);
-            tree.arena[idx_dir].parent = Some(current_index);
-            tree.arena[idx_dir].size = Some(0);
-            //println!("Current folder index : {}", current_index);
         }
         else if li[0..1].chars().all(char::is_numeric) {
-            let mut spl_folder = li.split(" ");
-            let (file_size, folder_name) = (spl_folder.next().unwrap().parse::<u32>().unwrap(), spl_folder.next().unwrap());
-            //println!("File : {:?} - size : {:?}", li, file_size);
-            let idx_file = tree.node(folder_name.into(), None);
+            let mut spl_file = li.split(" ");
+            let (file_size, file_name) = (spl_file.next().unwrap().parse::<u32>().unwrap(), spl_file.next().unwrap());
+            let idx_file = tree.node(file_name.into(), false, Some(file_size), Some(current_index));
             tree.arena[current_index].children.push(idx_file);
-            tree.arena[idx_file].parent = Some(current_index);
-            tree.arena[idx_file].size = Some(file_size);
-            //println!("Current file index : {}", idx_file);
         }
     }
 
+    tree.set_folders_size();
 
     let mut idx: usize = 0;
-    //let mut idx: usize = tree.arena.len();
     let mut sum_size: u32 = 0;
-    println!("Len arena : {}", tree.arena.len());
-
-    /* for _ in tree.arena.clone() {
-        idx -= 1;
-        if tree.arena[idx].size == Some(0) {
-            tree.arena[idx].size = Some(tree.get_folder_size(idx));
-        }
-        //println!("Index : {}", idx);
-        //println!("Size : {}", tree.get_folder_size(idx));
-        //if tree.arena[idx].size == Some(0) && tree.get_folder_size(idx) <= 100000 {
-            //println!("Folder with size less than 100000 : {:?} - size : {}", tree.arena[idx].val, tree.get_folder_size(idx));
-        //    sum_size += tree.get_folder_size(idx);
-        //}
-        //println!("Idx : {}", idx);
-    } */
 
     for _ in &tree.arena {
-        if tree.arena[idx].size == Some(0) && tree.get_folder_size(idx) <= 100000 {
-            //println!("Folder with size less than 100000 : {:?} - size : {}", tree.arena[idx].val, tree.get_folder_size(idx));
-            sum_size += tree.get_folder_size(idx);
+        if tree.arena[idx].isdir && tree.arena[idx].size <= Some(100000) {
+            sum_size += tree.arena[idx].size.unwrap();
         }
         idx += 1;
     }
-    //println!("Total size : {}", sum_size);
     if part == 1 {
         return sum_size.to_string();
     }
