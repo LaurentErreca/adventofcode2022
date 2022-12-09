@@ -132,6 +132,19 @@ pub fn solve(part: u8, input: &String) -> String {
     if part == 1 {
         return sum_size.to_string();
     }
+    if part == 2 {
+        let total_space: u32 = 70000000;
+        let needed_space: u32 = 30000000;
+        let space_to_save: u32 = needed_space - (total_space - tree.arena[0].size.unwrap());
+        let mut folders_size: Vec<u32> = vec![];
+        for idx in 0..tree.arena.len() {
+            if tree.arena[idx].isdir { folders_size.push(tree.arena[idx].size.unwrap()); }
+        }
+        folders_size.sort();
+        let mut filtered_folders_size: Vec<u32> = folders_size.into_iter().filter(|size| size >= &space_to_save).collect();
+        filtered_folders_size.sort();
+        return filtered_folders_size[0].to_string();
+    }
 
     return String::from("Wrong value for part");
 }
