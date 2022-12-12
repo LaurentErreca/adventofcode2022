@@ -8,8 +8,8 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
-/*mod day9;
-mod day10;
+mod day9;
+/*mod day10;
 mod day11;
 mod day12;
 mod day13;
@@ -36,8 +36,8 @@ pub fn solve(day: Day, part: u8, input: &String) -> String {
         6 => day6::solve(part, input),
         7 => day7::solve(part, input),
         8 => day8::solve(part, input),
-        /*9 => day9::solve(part, input),
-        10 => day10::solve(part, input),
+        9 => day9::solve(part, input),
+        /*10 => day10::solve(part, input),
         11 => day11::solve(part, input),
         12 => day12::solve(part, input),
         13 => day13::solve(part, input),

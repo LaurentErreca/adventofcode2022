@@ -8,10 +8,6 @@ pub fn div_rem_usize(x: usize, y: usize) -> (usize, usize) {
     div_rem(x,y)
 }
 
-fn print_grid(data: &Vec<u32>, nb_col: usize, nb_row: usize) -> () {
-    for nbrow in 0..nb_row { println!("{:?}", &data[nbrow*nb_col..nbrow*nb_col+nb_col]); }
-}
-
 fn is_visible(data: &Vec<u32>, index: usize, nb_col: usize, nb_row: usize) -> bool {
     let to_idx = |x: usize, y: usize| y*nb_col + x;
     let to_coord = |x| div_rem_usize(x, nb_col);
